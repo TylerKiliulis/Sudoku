@@ -8,10 +8,11 @@ practiceboard<-c(0,0,0,1,0,6,0,5,2,6,0,0,0,0,5,0,9,0,0,0,4,0,0,0,0,0,0,0,0,6,0,0
 practiceboard<-c(0,0,1,3,0,0,0,2,8,0,4,0,0,0,6,0,0,0,0,6,0,1,5,0,0,0,0,0,0,0,6,0,0,0,0,7,0,0,4,0,1,0,2,0,0,1,0,0,0,0,5,0,0,0,0,0,0,0,2,4,0,7,0,0,0,0,5,0,0,0,6,0,7,9,0,0,0,1,3,0,0)
 practiceboard<-c(7,0,0,0,0,0,0,0,0,3,0,0,0,0,4,8,2,1,0,2,0,3,0,0,6,0,0,9,8,0,7,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,1,0,0,9,5,0,7,0,3,0,8,0,1,0,0,0,0,0,0,0,0,0,0,9,0,5,1,0,0,9,3,0,0,0)
 practiceboard<-c(0,8,0,0,0,9,0,0,0,1,5,4,0,0,0,0,9,0,0,0,3,1,0,7,8,0,0,7,0,0,0,0,0,0,0,0,0,0,0,9,8,2,0,0,0,0,0,0,0,0,0,0,0,1,0,0,5,3,0,1,6,0,0,0,6,0,0,0,0,7,5,3,0,0,0,5,0,0,0,4,0)
-
+practiceboard<-c(0,0,1,0,0,0,0,0,7,0,0,5,0,0,0,6,0,9,9,4,0,0,0,2,0,0,0,7,5,0,0,0,0,2,0,0,0,0,9,0,8,0,0,0,0,0,0,0,1,0,0,4,0,0,0,0,0,0,0,8,0,7,0,0,9,0,0,6,0,0,0,5,3,0,0,0,1,0,0,0,0)
+practiceboard<-c(0,0,0,0,0,0,0,0,7,0,0,5,0,0,0,6,0,9,9,4,0,0,0,2,0,0,0,7,5,0,0,0,0,2,0,0,0,0,9,0,8,0,0,0,0,0,0,0,1,0,0,4,0,0,0,0,0,0,0,8,0,7,0,0,9,0,0,6,0,0,0,5,3,0,0,0,1,0,0,0,0)
 #Run as a single function:
 
-# sudoku(practiceboard)
+sudoku(practiceboard)
 
 #Run as a script:
 origboard<-practiceboard
@@ -45,14 +46,14 @@ if (!complete) {
     complete<-TRUE
   }
 }
-#Start pair and pair-like solving (Tier 3 Solve)
+#Pair-like solving (Tier 3 Solve)
 if (!complete) {
-  scratchworkboard<-tripledoublesolver(scratchworkboard)
+  scratchworkboard<-pairlikesolver(scratchworkboard)
   while (sum(nchar(scratchworkboard))<numchars) {
     numchars<-sum(nchar(scratchworkboard))
     scratchworkboard<-basicsolver(scratchworkboard)
     scratchworkboard<-probabilitysolver(scratchworkboard)
-    scratchworkboard<-tripledoublesolver(scratchworkboard)
+    scratchworkboard<-pairlikesolver(scratchworkboard)
   }
   if (numchars==81) {
     difficulty<-"Hard"
@@ -66,11 +67,16 @@ if (!complete) {
   if (!complete) {difficulty<-"Expert"}
 }
 endtime<-proc.time()-starttime
-scratchworkboard<-matrix(as.numeric(scratchworkboard),nrow=9,ncol=9)
 print.noquote("Original board:")
 print(origboard)
-print.noquote(paste("Difficulty: ",difficulty,sep=""))
-print.noquote("Solution:")
+if (class(scratchworkboard)=="list") {
+  print.noquote("Not enough information given, several solutions")
+  print.noquote("Solutions:")
+} else {
+  scratchworkboard<-matrix(as.numeric(scratchworkboard),nrow=9,ncol=9)
+  print.noquote(paste("Difficulty: ",difficulty,sep=""))
+  print.noquote("Solution:")
+}
 print(scratchworkboard)
 print.noquote("Time for program to solve:")
 print(endtime)
