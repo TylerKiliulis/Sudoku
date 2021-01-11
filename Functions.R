@@ -97,58 +97,38 @@ probabilitysolver<-function(scratchworkboard) {
   }
   return(scratchworkboard)
 }
-pairtest<-function(findpair) {
-  potentialpairs<-combn(9,2) #We'll be checking every single combination of 2 in this row/col/grid
-  for (i in 1:36) {
-    Double<-findpair[potentialpairs[(1:2),i]]
-      if (sum(nchar(Double))==4) {#Make sure the thing we're testing can even be a pair, eliminates a lot of extra stuff too
-        Double<-paste(Double,collapse="")
-        elim1<-substr(Double,1,1) #removing one of the numbers, suppose that is the number that will go in this combination of 2
-        Double<-gsub(elim1,"",Double)
-        elim2<-substr(Double,1,1) #doing the same thing, assume one of the remaining numbers will go in this set
-        Double<-gsub(elim2,"",Double)
-        if (nchar(Double)==0) { #If Double is now an empty string, then 2 numbers made up those 2 potential spots
-          findpair[-potentialpairs[(1:2),i]]<-gsub(elim1,"",findpair[-potentialpairs[(1:2),i]])
-          findpair[-potentialpairs[(1:2),i]]<-gsub(elim2,"",findpair[-potentialpairs[(1:2),i]])
-      }
-    }
-  }
-  return(findpair)
-}
-tripletest<-function(findtriple) {
-  potentialtriples<-combn(9,3) #We'll be checking every single combination of 3 in this row/col/grid
-  for (i in 1:84) {
-    Triple<-findtriple[potentialtriples[(1:3),i]]
-    if (sum(nchar(Triple))>5) {
-      if (sum(nchar(Triple))<10) {#Since we're checking every combination, narrow down anything that can't fit in our categories
-        Triple<-paste(Triple,collapse="")
-        elim1<-substr(Triple,1,1) #removing one of the numbers, suppose that is the number that will go in this combination of 3
-        Triple<-gsub(elim1,"",Triple)
-        elim2<-substr(Triple,1,1) #doing the same thing, assume one of the remaining numbers will go in this set
-        Triple<-gsub(elim2,"",Triple)
-        elim3<-substr(Triple,1,1) #and once again
-        Triple<-gsub(elim3,"",Triple)
-        if (nchar(Triple)==0) { #If Triple is now an empty string, then 3 numbers made up those 3 potential spots
-          findtriple[-potentialtriples[(1:3),i]]<-gsub(elim1,"",findtriple[-potentialtriples[(1:3),i]])
-          findtriple[-potentialtriples[(1:3),i]]<-gsub(elim2,"",findtriple[-potentialtriples[(1:3),i]])
-          findtriple[-potentialtriples[(1:3),i]]<-gsub(elim3,"",findtriple[-potentialtriples[(1:3),i]])
+pairliketest<-function(findpairlike) {
+  for (i in 2:7) { #if there's a row with all blanks, and 8 contain the same 8 numbers, the last one is that number, aka the guarantee function
+    potentials<-combn(9,i)
+    for (j in 1:length(potentials[1,])) {
+      Matchings<-findpairlike[potentials[(1:i),j]] #get the subset from the row/col/grid first
+      if (sum(nchar(Matchings))>=2*i) { #is there at least i characters?
+        if (sum(nchar(Matchings))<=i^2) { #is there at most i^2 characters (for triples, max would be 123 123 123, 9 characters)
+          Combos<-paste(Matchings,collapse="") #put all characters in one string
+          elims<-c(0,0,0,0,0,0,0,0)
+          for (k in 1:i) {
+            elims[k]<-substr(Combos,1,1) #take first element, store it, elimate all instances in that string
+            Combos<-gsub(elims[k],"",Combos)
+          }
+          if (nchar(Combos)==0) { #if the string is empty, that means those i characters occupy those i spaces, nowhere else
+            for (k in 1:i) { #eliminate the pairlike numbers that isn't this subset
+              findpairlike[-potentials[(1:i),j]]<-gsub(elims[k],"",findpairlike[-potentials[(1:i),j]])
+            }
+          }
         }
       }
     }
   }
-  return(findtriple)
+  return(findpairlike)
 }
-tripledoublesolver<-function(scratchworkboard) {
+pairlikesolver<-function(scratchworkboard) {
   for (i in 1:9) {
-    scratchworkboard[,i]<-pairtest(scratchworkboard[,i])
-    scratchworkboard[i,]<-pairtest(scratchworkboard[i,])
-    scratchworkboard[i,]<-tripletest(scratchworkboard[i,])
-    scratchworkboard[,i]<-tripletest(scratchworkboard[,i])
+    scratchworkboard[,i]<-pairliketest(scratchworkboard[,i])
+    scratchworkboard[i,]<-pairliketest(scratchworkboard[i,])
   }
   for (i in c(1,4,7)) {
     for (j in c(1,4,7)) {
-      scratchworkboard[(i:(i+2)),(j:(j+2))]<-pairtest(scratchworkboard[(i:(i+2)),(j:(j+2))])
-      scratchworkboard[(i:(i+2)),(j:(j+2))]<-tripletest(scratchworkboard[(i:(i+2)),(j:(j+2))])
+      scratchworkboard[(i:(i+2)),(j:(j+2))]<-pairliketest(scratchworkboard[(i:(i+2)),(j:(j+2))])
     }
   }
   return(scratchworkboard)
@@ -227,7 +207,9 @@ randomsolver<-function(scratchworkboard) {
   }
   }
   refinedpossibilities<-refiningpossibilities[-1]#get rid of the null needed to create the list in the first place
+  if (length(refinedpossibilities)==1) {
   return(matrix(unlist(refinedpossibilities),nrow=9,ncol=9))
+  } else {return(refinedpossibilities)}
 }
 sudoku<-function(origboard) {
   difficulty<-NULL
@@ -262,12 +244,12 @@ sudoku<-function(origboard) {
   }
   #Start pair and pair-like solving (Tier 3 Solve)
   if (!complete) {
-    scratchworkboard<-tripledoublesolver(scratchworkboard)
+    scratchworkboard<-pairlikesolver(scratchworkboard)
     while (sum(nchar(scratchworkboard))<numchars) {
       numchars<-sum(nchar(scratchworkboard))
       scratchworkboard<-basicsolver(scratchworkboard)
       scratchworkboard<-probabilitysolver(scratchworkboard)
-      scratchworkboard<-tripledoublesolver(scratchworkboard)
+      scratchworkboard<-pairlikesolver(scratchworkboard)
     }
     if (numchars==81) {
       difficulty<-"Hard"
@@ -281,11 +263,16 @@ sudoku<-function(origboard) {
     if (!complete) {difficulty<-"Expert"}
   }
   endtime<-proc.time()-starttime
-  scratchworkboard<-matrix(as.numeric(scratchworkboard),nrow=9,ncol=9)
   print.noquote("Original board:")
   print(origboard)
-  print.noquote(paste("Difficulty: ",difficulty,sep=""))
-  print.noquote("Solution:")
+  if (class(scratchworkboard)=="list") {
+    print.noquote("Not enough information given, several solutions")
+    print.noquote("Solutions:")
+  } else {
+    scratchworkboard<-matrix(as.numeric(scratchworkboard),nrow=9,ncol=9)
+    print.noquote(paste("Difficulty: ",difficulty,sep=""))
+    print.noquote("Solution:")
+  }
   print(scratchworkboard)
   print.noquote("Time for program to solve:")
   print(endtime)
